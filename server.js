@@ -38,6 +38,12 @@ async function initDb() {
     CHECK (referrer_id <> referred_student_id)
   )`);
 }
+
+// مسار الصفحة الرئيسية للتأكد من أن السيرفر يعمل
+app.get('/', (req, res) => {
+  res.status(200).send('Server is running successfully and connected to database!');
+});
+
 app.get('/api/health', async (_req, res) => {
   try { await pool.query('SELECT 1'); res.json({ ok: true, service: 'iraq-points-backend', database: 'connected' }); }
   catch (e) { console.error(e.message); res.status(503).json({ ok: false, database: 'unavailable' }); }
@@ -60,7 +66,6 @@ app.post('/api/admin/students/points', adminOnly, async (req, res) => {
     res.json({success:true,studentId:id,added:amount,balance:Number(r.rows[0].points)});
   } catch(e) { console.error(e.message); res.status(500).json({error:'تعذر حفظ النقاط'}); }
 });
-// POST /api/admin/access-codes ; header x-admin-key ; body { days: 30 }
 app.post('/api/admin/access-codes', adminOnly, async (req,res) => {
   const days=Number(req.body?.days);
   if (!Number.isSafeInteger(days)||days<1||days>3650) return res.status(400).json({error:'مدة الكود يجب أن تكون من 1 إلى 3650 يوماً'});
@@ -75,7 +80,6 @@ app.post('/api/admin/access-codes', adminOnly, async (req,res) => {
     res.status(500).json({error:'تعذر إنشاء كود فريد'});
   } catch(e) { console.error('Generate code:',e.message); res.status(500).json({error:'تعذر إنشاء الكود في قاعدة البيانات'}); }
 });
-// Atomic one-time redemption; the same code cannot be redeemed by two requests.
 app.post('/api/access-codes/verify', async (req,res) => {
   const code=String(req.body?.code??'').trim().toUpperCase(), studentId=clean(req.body?.studentId);
   if(!code||!studentId) return res.status(400).json({success:false,error:'code و studentId مطلوبان'});
